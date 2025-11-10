@@ -1,67 +1,30 @@
-# Multi-stage build for Next.js Frontend
-FROM node:20-alpine AS base
+# Next.js Development Dockerfile for Kubernetes
+FROM node:20-alpine
 
 # Install ca-certificates for custom CA support
 RUN apk add --no-cache ca-certificates
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
-# Copy custom CA certificate (optional)
-# Uncomment and add your CA cert to the build context
-# COPY custom-ca.crt /usr/local/share/ca-certificates/custom-ca.crt
-# RUN update-ca-certificates
 
 # Copy package files
 COPY package.json package-lock.json* ./
-# Disable postinstall script during Docker build
+
+# Install dependencies (skip postinstall scripts)
 RUN npm ci --ignore-scripts
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
-
-# Set environment variable for build
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-
-# Build Next.js application
-RUN npm run build
-
-# Debug: List the build output
-RUN ls -la .next/ && ls -la .next/standalone/ || echo "No standalone build found"
-
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy necessary files
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
 
 # Expose port
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=development
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Run the application with verbose logging
-CMD ["sh", "-c", "echo '🚀 Starting Next.js server...' && echo '📍 Listening on http://0.0.0.0:3000' && exec node server.js"]
+# Run development server with hot-reload
+CMD ["npm", "run", "dev"]

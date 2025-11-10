@@ -51,12 +51,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development  # Use development stage
     container_name: chat-k8s-frontend
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - AGENT_URL=http://agent:8000/
+    volumes:
+      # Mount source code for hot-reload
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+      - ./next.config.ts:/app/next.config.ts
+      - ./tsconfig.json:/app/tsconfig.json
+      # Exclude node_modules
+      - /app/node_modules
+      - /app/.next
     depends_on:
       agent:
         condition: service_healthy
