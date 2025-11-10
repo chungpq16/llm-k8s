@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-kubernetes@latest"
+      ],
+      "description": "Kubernetes operations - minimal config for testing",
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG:~/.kube/config}"
+      }
+    }
+  }
+}

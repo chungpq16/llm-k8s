@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Python Backend - Pydantic AI Agent
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    container_name: chat-k8s-agent
+    ports:
+      - "8000:8000"
+    environment:
+      # Choose your LLM provider
+      - USE_LLM_FARM=${USE_LLM_FARM:-false}
+      
+      # LLM Farm Configuration (if USE_LLM_FARM=true)
+      - LLM_FARM_BASE_URL=${LLM_FARM_BASE_URL}
+      - LLM_FARM_API_KEY=${LLM_FARM_API_KEY}
+      - LLM_FARM_MODEL=${LLM_FARM_MODEL:-gpt-4o}
+      
+      # OpenAI Configuration (if USE_LLM_FARM=false)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      
+      # Tavily Search API
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      
+      # Kubernetes Configuration
+      - KUBECONFIG=/app/kubeconfig.yaml
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN}
+    volumes:
+      # Mount kubeconfig for Kubernetes access
+      - ${HOME}/.kube/config:/app/kubeconfig.yaml:ro
+      # Optional: Mount agent logs
+      - ./agent/logs:/app/logs
+    networks:
+      - chat-k8s-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-k8s-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AGENT_URL=http://agent:8000/
+    depends_on:
+      agent:
+        condition: service_healthy
+    networks:
+      - chat-k8s-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  chat-k8s-network:
+    driver: bridge
