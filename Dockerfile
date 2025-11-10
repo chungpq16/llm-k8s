@@ -32,6 +32,9 @@ ENV NODE_ENV=production
 # Build Next.js application
 RUN npm run build
 
+# Debug: List the build output
+RUN ls -la .next/ && ls -la .next/standalone/ || echo "No standalone build found"
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -58,7 +61,7 @@ ENV HOSTNAME="0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+    CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Run the application
-CMD ["node", "server.js"]
+# Run the application with verbose logging
+CMD ["sh", "-c", "echo '🚀 Starting Next.js server...' && echo '📍 Listening on http://0.0.0.0:3000' && exec node server.js"]
