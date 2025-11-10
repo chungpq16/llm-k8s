@@ -1,10 +1,18 @@
 # Multi-stage build for Next.js Frontend
 FROM node:20-alpine AS base
 
+# Install ca-certificates for custom CA support
+RUN apk add --no-cache ca-certificates
+
 # Install dependencies only when needed
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
+
+# Copy custom CA certificate (optional)
+# Uncomment and add your CA cert to the build context
+# COPY custom-ca.crt /usr/local/share/ca-certificates/custom-ca.crt
+# RUN update-ca-certificates
 
 # Copy package files
 COPY package.json package-lock.json* ./

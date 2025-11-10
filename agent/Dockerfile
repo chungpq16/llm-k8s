@@ -8,7 +8,13 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy custom CA certificate (optional)
+# Uncomment and add your CA cert to the build context
+# COPY custom-ca.crt /usr/local/share/ca-certificates/custom-ca.crt
+# RUN update-ca-certificates
 
 # Install uv package manager
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
