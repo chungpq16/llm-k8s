@@ -90,9 +90,6 @@ agent/*.log
 agent/logs/
 agent.log
 
-# Agent source (if needed to exclude)
-agent/src/agent.py
-
 # Jupyter Notebook
 .ipynb_checkpoints
 
