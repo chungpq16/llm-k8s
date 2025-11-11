@@ -26,7 +26,7 @@ COPY src/ ./src/
 COPY mcp_config.json mcp_config_minimal.json ./
 
 # Install Python dependencies using uv
-RUN uv sync --frozen
+RUN /root/.cargo/bin/uv sync --frozen
 
 # Create directory for logs
 RUN mkdir -p /app/logs
@@ -36,6 +36,7 @@ EXPOSE 8000
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src:/app
 ENV LOG_LEVEL=info
 ENV HOST=0.0.0.0
 ENV PORT=8000
@@ -44,5 +45,5 @@ ENV PORT=8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the agent using uv
-CMD ["uv", "run", "src/main.py"]
+# Run the agent using uv with full path
+CMD ["/root/.cargo/bin/uv", "run", "python", "src/main.py"]
